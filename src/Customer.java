@@ -2,7 +2,6 @@ import java.util.Random;
 
 public class Customer extends User {
     private String customerId;
-
     private String level;
     private String registerTime;
     private double totalConsume;
@@ -32,15 +31,12 @@ public class Customer extends User {
     public void setTotalConsume(double totalConsume) {
         this.totalConsume = totalConsume;
     }
-
     public String getPhone() {
         return phone;
     }
-
     public void setPhone(String phone) {
         this.phone = phone;
     }
-
     public String getEmail() {
         return email;
     }
@@ -56,12 +52,9 @@ public class Customer extends User {
         Random random = new Random();
         StringBuilder password = new StringBuilder();
         password.append(lowerCase.charAt(random.nextInt(lowerCase.length())));
-        password.append(
-                upperCase.charAt(random.nextInt(upperCase.length())));
-        password.append(
-                digits.charAt(random.nextInt(digits.length())));
-        password.append(
-                symbols.charAt(random.nextInt(symbols.length())));
+        password.append(upperCase.charAt(random.nextInt(upperCase.length())));
+        password.append(digits.charAt(random.nextInt(digits.length())));
+        password.append(symbols.charAt(random.nextInt(symbols.length())));
         for (int i = 4; i < 10; i++) {
             password.append(all.charAt(random.nextInt(all.length())));}return password.toString();
     }

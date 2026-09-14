@@ -161,24 +161,13 @@ public class ShoppingSystem {
     private void customerChangePassword() {
         System.out.print("请输入旧密码：");
         String oldPassword = scanner.nextLine();
-        if (
-                !currentCustomer
-                        .getPassword()
-                        .equals(oldPassword)
-        ) {
-            System.out.println(
-                    "旧密码错误！"
-            );
+        if (!currentCustomer.getPassword().equals(oldPassword)) {
+            System.out.println("旧密码错误！");
             return;
         }
-        System.out.print(
-                "请输入新密码："
-        );
-        String newPassword =
-                scanner.nextLine();
-        currentCustomer.setPassword(
-                newPassword
-        );
+        System.out.print("请输入新密码：");
+        String newPassword = scanner.nextLine();
+        currentCustomer.setPassword(newPassword);
         UserManager.saveCustomers();
         System.out.println("密码修改成功！");
     }
@@ -219,15 +208,10 @@ public class ShoppingSystem {
     }
     private void addGoodsTowardsCart() {
         System.out.print("请输入商品名称：");
-        String goodName =
-                scanner.nextLine();
-        System.out.print(
-                "请输入商品数量："
-        );
-        String num =
-                scanner.nextLine();
-        System.out.println(
-                "已添加 " + num + " 个 " + goodName + " 到购物车。");
+        String goodName = scanner.nextLine();
+        System.out.print("请输入商品数量：");
+        String num = scanner.nextLine();
+        System.out.println("已添加 " + num + " 个 " + goodName + " 到购物车。");
     }
     private void deleteGoodsTowardsCart() {
         System.out.print("请输入商品名称：");
@@ -239,7 +223,8 @@ public class ShoppingSystem {
         if (answer.equals("y"))
         {
             System.out.println("已删除 " + num + " 个 " + goodName);
-        } else {
+        }
+        else {
             System.out.println("已取消操作。");
         }
     }
@@ -285,13 +270,11 @@ public class ShoppingSystem {
                 UserManager.getCustomerList();
         System.out.println();
         System.out.println("===== 所有顾客 =====");
-        if (list.isEmpty())
-        {
+        if (list.isEmpty()) {
             System.out.println("当前没有顾客。");
             return;
         }
-        for (Customer customer : list)
-        {
+        for (Customer customer : list) {
             System.out.println("编号：" + customer.getCustomerId());
             System.out.println("用户名：" + customer.getUsername());
             System.out.println("等级："+ customer.getLevel());
@@ -304,8 +287,7 @@ public class ShoppingSystem {
         ArrayList<Admin> list = UserManager.getAdminList();
         System.out.println();
         System.out.println("===== 所有管理员 =====");
-        for (Admin admin : list)
-        {
+        for (Admin admin : list) {
             System.out.println("管理员用户名：" + admin.getUsername());
         }
     }
@@ -313,16 +295,13 @@ public class ShoppingSystem {
         System.out.print("请输入顾客用户名：");String username = scanner.nextLine();
         ArrayList<Customer> list = UserManager.getCustomerList();
         Customer targetCustomer = null;
-        for (Customer customer : list)
-        {
-            if (customer.getUsername().equals(username))
-            {
+        for (Customer customer : list) {
+            if (customer.getUsername().equals(username)) {
                 targetCustomer = customer;
                 break;
             }
         }
-        if (targetCustomer == null)
-        {
+        if (targetCustomer == null) {
             System.out.println("没有找到该顾客！");
             return;
         }
@@ -335,8 +314,7 @@ public class ShoppingSystem {
     private void adminChangePassword() {
         System.out.print("请输入旧密码：");
         String oldPassword = scanner.nextLine();
-        if (!currentAdmin.getPassword().equals(oldPassword))
-        {
+        if (!currentAdmin.getPassword().equals(oldPassword)) {
             System.out.println("旧密码错误！");
             return;
         }

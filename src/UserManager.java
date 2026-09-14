@@ -22,12 +22,7 @@ public class UserManager {
             adminList.add(admin);
             saveAdmins();
             System.out.println("系统已创建默认管理员：admin / admin123");}}
-    public static boolean registerCustomer(
-            String username,
-            String password,
-            String phone,
-            String email)
-    {
+    public static boolean registerCustomer(String username, String password, String phone, String email) {
         if (usernameExists(username)) {
             return false;
         }
@@ -35,11 +30,9 @@ public class UserManager {
         customer.setUsername(username);
         customer.setPassword(password);
         customer.setCustomerId(
-                "C" + (customerList.size() + 1)
-        );
+                "C" + (customerList.size() + 1));
         customer.setLevel("普通会员");
-        customer.setRegisterTime(
-                LocalDate.now().toString());
+        customer.setRegisterTime(LocalDate.now().toString());
         customer.setTotalConsume(0);
         customer.setPhone(phone);
         customer.setEmail(email);
@@ -47,10 +40,7 @@ public class UserManager {
         saveCustomers();
         return true;
     }
-    public static boolean registerAdmin(
-            String username,
-            String password)
-    {
+    public static boolean registerAdmin(String username, String password) {
         if (usernameExists(username)) {
             return false;
         }
@@ -61,10 +51,7 @@ public class UserManager {
         saveAdmins();
         return true;
     }
-    public static Customer loginCustomer(
-            String username,
-            String password)
-    {
+    public static Customer loginCustomer(String username, String password) {
         for (Customer customer : customerList) {
             if (customer.getUsername().equals(username) && customer.getPassword().equals(password)) {
                 return customer;
@@ -72,10 +59,7 @@ public class UserManager {
         }
         return null;
     }
-    public static Admin loginAdmin(
-            String username,
-            String password)
-    {
+    public static Admin loginAdmin(String username, String password) {
         for (Admin admin : adminList) {
             if (admin.getUsername().equals(username) && admin.getPassword().equals(password))
             {
@@ -116,12 +100,10 @@ public class UserManager {
         if (!file.exists()) {
             return;
         }
-        try (
-                BufferedReader reader = new BufferedReader(new FileReader(file)))
+        try (BufferedReader reader = new BufferedReader(new FileReader(file)))
         {
             String line;
-            while (
-                    (line = reader.readLine()) != null)
+            while ((line = reader.readLine()) != null)
             {
                 line = line.trim();
                 if (line.equals("")) {
@@ -148,22 +130,7 @@ public class UserManager {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(CUSTOMER_FILE))) {
             for (Customer customer : customerList)
             {
-                writer.write(
-                        customer.getUsername()
-                                + SEP
-                                + customer.getPassword()
-                                + SEP
-                                + customer.getCustomerId()
-                                + SEP
-                                + customer.getLevel()
-                                + SEP
-                                + customer.getRegisterTime()
-                                + SEP
-                                + customer.getTotalConsume()
-                                + SEP
-                                + customer.getPhone()
-                                + SEP
-                                + customer.getEmail());
+                writer.write(customer.getUsername() + SEP + customer.getPassword() + SEP + customer.getCustomerId() + SEP + customer.getLevel() + SEP + customer.getRegisterTime() + SEP + customer.getTotalConsume() + SEP + customer.getPhone() + SEP + customer.getEmail());
                 writer.newLine();
             }
         } catch (IOException e) {
@@ -178,15 +145,12 @@ public class UserManager {
         try (BufferedReader reader = new BufferedReader(new FileReader(file)))
         {
             String line;
-            while (
-                    (line = reader.readLine())!= null)
-            {
+            while ((line = reader.readLine())!= null) {
                 line = line.trim();
                 if (line.equals("")) {
                     continue;
                 }
-                String[] parts =
-                        line.split(SEP);
+                String[] parts = line.split(SEP);
                 if (parts.length >= 2) {
                     Admin admin = new Admin();
                     admin.setUsername(parts[0]);
@@ -199,15 +163,13 @@ public class UserManager {
         }
     }
     public static void saveAdmins() {
-        try (
-                BufferedWriter writer = new BufferedWriter(new FileWriter(ADMIN_FILE)))
-        {
-            for (Admin admin
-                    : adminList) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(ADMIN_FILE))) {
+            for (Admin admin : adminList) {
                 writer.write(admin.getUsername() + SEP + admin.getPassword());
                 writer.newLine();
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             System.out.println("保存管理员文件失败：" + e.getMessage());
         }
     }
