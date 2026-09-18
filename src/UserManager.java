@@ -14,11 +14,11 @@ public class UserManager {
     private static final String SEP = "~";
     public static void loadData() {
         loadCustomers();
-        loadAdmins();
+        loadAdmins();//读取管理员/顾客，从txt文本读取
         if (adminList.isEmpty()) {
             Admin admin = new Admin();
             admin.setUsername("admin");
-            admin.setPassword("admin123");
+            admin.setPassword("admin123");//默认管理员，默认管理密码
             adminList.add(admin);
             saveAdmins();
             System.out.println("系统已创建默认管理员：admin / admin123");}}
