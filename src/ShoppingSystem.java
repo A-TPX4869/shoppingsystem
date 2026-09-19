@@ -85,17 +85,23 @@ public class ShoppingSystem {
             System.out.println("密码长度需大于8位，且必须同时包含大写字母、小写字母、数字和标点符号！");
             return;
         }
-        System.out.print("请输入电话号码：");
-        String phone = scanner.nextLine();
-        if (!isValidPhone(phone)) {//按国家标准校验手机号
-            System.out.println("电话号码格式不正确（应为11位手机号，1开头）！");
-            return;
+        String phone;
+        while (true) {
+            System.out.print("请输入电话号码：");
+            phone = scanner.nextLine();
+            if (isValidPhone(phone)) {//按国家标准校验手机号
+                break;
+            }
+            System.out.println("电话号码格式不正确（应为11位手机号，1开头），请重新输入！");
         }
-        System.out.print("请输入邮箱：");
-        String email = scanner.nextLine();
-        if (!isValidEmail(email)) {//按标准邮箱格式校验
-            System.out.println("邮箱格式不正确！");
-            return;
+        String email;
+        while (true) {
+            System.out.print("请输入邮箱：");
+            email = scanner.nextLine();
+            if (isValidEmail(email)) {//按标准邮箱格式校验
+                break;
+            }
+            System.out.println("邮箱格式不正确，请重新输入！");
         }
         boolean result = UserManager.registerCustomer(username, password, phone, email);
         if (result) {
@@ -131,9 +137,9 @@ public class ShoppingSystem {
     private void customerLogin() {
         System.out.println();
         System.out.println("===== 顾客登录 =====");
+        System.out.print("用户名：");
+        String username = scanner.nextLine();
         for (int attempt = 0; attempt < 3; attempt++) {
-            System.out.print("用户名：");
-            String username = scanner.nextLine();
             System.out.print("密码：");
             String password = scanner.nextLine();
             Customer customer = UserManager.loginCustomer(username, password);
@@ -174,17 +180,22 @@ public class ShoppingSystem {
         System.out.println("===== 管理员登录 =====");
         System.out.print("管理员用户名：");
         String username = scanner.nextLine();
-        System.out.print("管理员密码：");
-        String password = scanner.nextLine();
-        currentAdmin = UserManager.loginAdmin(username, password);
-        if (currentAdmin != null) {
-            System.out.println("管理员登录成功！");
-            System.out.println("欢迎管理员：" + currentAdmin.getUsername());
-            adminMenu();
+        for (int attempt = 0; attempt < 3; attempt++) {
+            System.out.print("管理员密码：");
+            String password = scanner.nextLine();
+            currentAdmin = UserManager.loginAdmin(username, password);
+            if (currentAdmin != null) {
+                System.out.println("管理员登录成功！");
+                System.out.println("欢迎管理员：" + currentAdmin.getUsername());
+                adminMenu();
+                return;
+            }
+            int remain = 2 - attempt;
+            if (remain > 0) {
+                System.out.println("管理员密码错误！还可尝试 " + remain + " 次，请重新输入密码：");
+            }
         }
-        else {
-            System.out.println("管理员用户名或密码错误！");
-        }
+        System.out.println("连续错误3次，登录失败！");
     }
     private void customerMenu() {
         while (true) {
@@ -682,25 +693,32 @@ public class ShoppingSystem {
     private void addGoods() {
         System.out.println();
         System.out.println("===== 添加商品 =====");
-        System.out.print("请输入商品编号（G开头+3位数字，如G001）：");
-        String productId = scanner.nextLine();
-        if (!isValidProductId(productId)) {
-            System.out.println("商品编号格式不正确（应为G开头加3位数字，如G001）！");
-            return;
-        }
-        if (UserManager.findGoodsByProductId(productId) != null) {
-            System.out.println("该商品编号已存在！");
-            return;
+        String productId;
+        while (true) {
+            System.out.print("请输入商品编号（G开头+3位数字，如G001）：");
+            productId = scanner.nextLine();
+            if (!isValidProductId(productId)) {
+                System.out.println("商品编号格式不正确（应为G开头加3位数字，如G001），请重新输入！");
+                continue;
+            }
+            if (UserManager.findGoodsByProductId(productId) != null) {
+                System.out.println("该商品编号已存在，请重新输入！");
+                continue;
+            }
+            break;
         }
         System.out.print("请输入商品名称：");
         String productName = scanner.nextLine();
         System.out.print("请输入生产厂家：");
         String manufacturer = scanner.nextLine();
-        System.out.print("请输入生产日期（格式yyyy-MM-dd）：");
-        String produceDate = scanner.nextLine();
-        if (!isValidDate(produceDate)) {
-            System.out.println("生产日期格式不正确（应为yyyy-MM-dd，如2026-01-10）！");
-            return;
+        String produceDate;
+        while (true) {
+            System.out.print("请输入生产日期（格式yyyy-MM-dd，如2026-01-10）：");
+            produceDate = scanner.nextLine();
+            if (isValidDate(produceDate)) {
+                break;
+            }
+            System.out.println("生产日期格式不正确，请重新输入！");
         }
         System.out.print("请输入型号：");
         String model = scanner.nextLine();
@@ -743,11 +761,14 @@ public class ShoppingSystem {
         target.setProductName(scanner.nextLine());
         System.out.print("请输入新的生产厂家：");
         target.setManufacturer(scanner.nextLine());
-        System.out.print("请输入新的生产日期（格式yyyy-MM-dd）：");
-        String newDate = scanner.nextLine();
-        if (!isValidDate(newDate)) {
-            System.out.println("生产日期格式不正确，修改失败！");
-            return;
+        String newDate;
+        while (true) {
+            System.out.print("请输入新的生产日期（格式yyyy-MM-dd，如2026-01-10）：");
+            newDate = scanner.nextLine();
+            if (isValidDate(newDate)) {
+                break;
+            }
+            System.out.println("生产日期格式不正确，请重新输入！");
         }
         target.setProduceDate(newDate);
         System.out.print("请输入新的型号：");
