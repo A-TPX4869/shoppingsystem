@@ -322,11 +322,15 @@ public class ShoppingSystem {
             System.out.println("暂无商品可购买！");
             return;
         }
+        printGoodsHeader();
         for (Goods g : goodsList) {
             printGoods(g);
         }
-        System.out.print("请输入商品编号：");
+        System.out.print("请输入商品编号（输入0返回）：");
         String productId = scanner.nextLine();
+        if (productId.equals("0")) {
+            return;
+        }
         Goods target = UserManager.findGoodsByProductId(productId);
         if (target == null) {
             System.out.println("商品不存在！");
@@ -432,6 +436,13 @@ public class ShoppingSystem {
                     subTotal);
         }
         System.out.printf("订单总金额：%.2f%n", total);
+        System.out.println("0. 返回修改购物车");
+        System.out.println("1. 继续结算");
+        int back = readInt("请选择：");
+        if (back == 0) {
+            System.out.println("已返回商品菜单，请修改购物车。");
+            return;
+        }
         System.out.println("请选择支付渠道：");
         System.out.println("1.支付宝  2.微信  3.银行卡");
         int payType = readInt("请选择：");
@@ -686,6 +697,7 @@ public class ShoppingSystem {
             System.out.println("当前没有商品。");
             return;
         }
+        printGoodsHeader();
         for (Goods g : list) {
             printGoods(g);
         }
@@ -830,16 +842,18 @@ public class ShoppingSystem {
             printGoods(g);
         }
     }
+    //打印商品表头
+    private void printGoodsHeader() {
+        System.out.printf("%-8s%-12s%-12s%-12s%-10s%-8s%-8s%-6s%n",
+                "编号", "名称", "厂家", "生产日期", "型号", "进货价", "零售价", "库存");
+        System.out.println("------------------------------------------------------------------------");
+    }
+    //以表格形式打印单个商品
     private void printGoods(Goods g) {
-        System.out.println("商品编号：" + g.getProductId());
-        System.out.println("商品名称：" + g.getProductName());
-        System.out.println("生产厂家：" + g.getManufacturer());
-        System.out.println("生产日期：" + g.getProduceDate());
-        System.out.println("型号：" + g.getModel());
-        System.out.println("进货价：" + g.getPurchasePrice());
-        System.out.println("零售价格：" + g.getRetailPrice());
-        System.out.println("数量：" + g.getNum());
-        System.out.println("------------------");
+        System.out.printf("%-8s%-12s%-12s%-12s%-10s%-8.2f%-8.2f%-6d%n",
+                g.getProductId(), g.getProductName(), g.getManufacturer(),
+                g.getProduceDate(), g.getModel(),
+                g.getPurchasePrice(), g.getRetailPrice(), g.getNum());
     }
     private int readInt(String prompt) {
         while (true) {
