@@ -1,3 +1,4 @@
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -5,6 +6,7 @@ public class ShoppingSystem {
     private Scanner scanner = new Scanner(System.in);
     private Customer currentCustomer;
     private Admin currentAdmin;
+    private ArrayList<CartItem> cart = new ArrayList<>();
     public void startMenu() {
         while (true) {
             System.out.println();
@@ -45,15 +47,21 @@ public class ShoppingSystem {
         System.out.println("===== 顾客注册 =====");
         System.out.print("请输入用户名：");
         String username = scanner.nextLine();
+        if (username.length() < 5) {
+            System.out.println("用户名长度不少于5个字符！");
+            return;
+        }
         System.out.print("请输入密码：");
         String password = scanner.nextLine();
+        if (!User.isValidPassword(password)) {
+            System.out.println("密码长度需大于8位，且必须同时包含大写字母、小写字母、数字和标点符号！");
+            return;
+        }
         System.out.print("请输入电话号码：");
         String phone = scanner.nextLine();
         System.out.print("请输入邮箱：");
         String email = scanner.nextLine();
         boolean result = UserManager.registerCustomer(username, password, phone, email);
-
-
         if (result) {
             System.out.println("注册成功！");
         }
@@ -79,20 +87,42 @@ public class ShoppingSystem {
     private void customerLogin() {
         System.out.println();
         System.out.println("===== 顾客登录 =====");
-        System.out.print("用户名：");
-        String username = scanner.nextLine();
-        System.out.print("密码：");
-        String password = scanner.nextLine();
-        currentCustomer = UserManager.loginCustomer(username, password);
-        if (currentCustomer != null)
-        {
-            System.out.println();
-            System.out.println("登录成功！");
-            System.out.println("欢迎你：" + currentCustomer.getUsername());
-            customerMenu();
-        }
-        else {
-            System.out.println("用户名或密码错误！");
+        for (int attempt = 0; attempt < 3; attempt++) {
+            System.out.print("用户名：");
+            String username = scanner.nextLine();
+            System.out.print("密码：");
+            String password = scanner.nextLine();
+            Customer customer = UserManager.loginCustomer(username, password);
+            if (customer != null) {
+                if (customer.isLocked()) {
+                    System.out.println("账户已锁定，请联系管理员重置密码！");
+                    return;
+                }
+                customer.setFailedAttempt(0);
+                UserManager.saveCustomers();
+                cart = new ArrayList<>();
+                System.out.println();
+                System.out.println("登录成功！");
+                System.out.println("欢迎你：" + customer.getUsername());
+                currentCustomer = customer;
+                customerMenu();
+                return;
+            }
+            Customer target = UserManager.findCustomerByUsername(username);
+            if (target != null) {
+                target.setFailedAttempt(target.getFailedAttempt() + 1);
+                if (target.getFailedAttempt() >= 3) {
+                    target.setLocked(true);
+                }
+                UserManager.saveCustomers();
+            }
+            int remain = 3 - attempt - 1;
+            if (remain > 0) {
+                System.out.println("用户名或密码错误！还可尝试 " + remain + " 次。");
+            }
+            else {
+                System.out.println("连续错误3次，账户已锁定！");
+            }
         }
     }
     private void adminLogin() {
@@ -102,10 +132,8 @@ public class ShoppingSystem {
         String username = scanner.nextLine();
         System.out.print("管理员密码：");
         String password = scanner.nextLine();
-        currentAdmin =
-                UserManager.loginAdmin(username, password);
-        if (currentAdmin != null)
-        {
+        currentAdmin = UserManager.loginAdmin(username, password);
+        if (currentAdmin != null) {
             System.out.println("管理员登录成功！");
             System.out.println("欢迎管理员：" + currentAdmin.getUsername());
             adminMenu();
@@ -141,6 +169,7 @@ public class ShoppingSystem {
                 case "0":
                     System.out.println("已退出当前顾客账号。");
                     currentCustomer = null;
+                    cart = new ArrayList<>();
                     return;
                 default:
                     System.out.println("输入错误！");
@@ -167,25 +196,43 @@ public class ShoppingSystem {
         }
         System.out.print("请输入新密码：");
         String newPassword = scanner.nextLine();
+        if (!User.isValidPassword(newPassword)) {
+            System.out.println("新密码长度需大于8位，且必须同时包含大写字母、小写字母、数字和标点符号！");
+            return;
+        }
         currentCustomer.setPassword(newPassword);
         UserManager.saveCustomers();
         System.out.println("密码修改成功！");
     }
     private void customerForgetPassword() {
-        System.out.println("系统正在生成新密码...");
-        String newPassword = currentCustomer.createRandomPassword();
-        currentCustomer.setPassword(newPassword);
+        System.out.println();
+        System.out.println("===== 忘记密码 =====");
+        System.out.print("请输入用户名：");
+        String username = scanner.nextLine();
+        System.out.print("请输入注册时使用的邮箱：");
+        String email = scanner.nextLine();
+        Customer c = UserManager.findCustomerByUsername(username);
+        if (c == null || !c.getEmail().equals(email)) {
+            System.out.println("用户名与邮箱不匹配，无法重置密码！");
+            return;
+        }
+        String newPassword = c.createRandomPassword();
+        c.setPassword(newPassword);
+        c.setFailedAttempt(0);
+        c.setLocked(false);
         UserManager.saveCustomers();
-        System.out.println("新密码为：" + newPassword);
-        System.out.println("实际项目中应该通过邮箱发送。");
+        System.out.println("新密码已生成（模拟发送至邮箱）：" + newPassword);
+        System.out.println("请使用新密码登录。");
     }
     private void shoppingMenu() {
         while (true) {
             System.out.println();
             System.out.println("===== 商品菜单 =====");
-            System.out.println("1. 添加商品到购物车");
-            System.out.println("2. 删除购物车商品");
-            System.out.println("3. 结算商品");
+            System.out.println("1. 浏览商品并加入购物车");
+            System.out.println("2. 从购物车移除商品");
+            System.out.println("3. 修改购物车商品数量");
+            System.out.println("4. 结算");
+            System.out.println("5. 查看购物历史");
             System.out.println("0. 返回顾客菜单");
             System.out.print("请选择：");
             String choice = scanner.nextLine();
@@ -197,7 +244,13 @@ public class ShoppingSystem {
                     deleteGoodsTowardsCart();
                     break;
                 case "3":
+                    modifyCartQuantity();
+                    break;
+                case "4":
                     checkGoods();
+                    break;
+                case "5":
+                    viewOrderHistory();
                     break;
                 case "0":
                     return;
@@ -207,30 +260,194 @@ public class ShoppingSystem {
         }
     }
     private void addGoodsTowardsCart() {
-        System.out.print("请输入商品名称：");
-        String goodName = scanner.nextLine();
-        System.out.print("请输入商品数量：");
-        String num = scanner.nextLine();
-        System.out.println("已添加 " + num + " 个 " + goodName + " 到购物车。");
+        System.out.println();
+        System.out.println("===== 加入购物车 =====");
+        ArrayList<Goods> goodsList = UserManager.getGoodsList();
+        if (goodsList.isEmpty()) {
+            System.out.println("暂无商品可购买！");
+            return;
+        }
+        for (Goods g : goodsList) {
+            printGoods(g);
+        }
+        System.out.print("请输入商品编号：");
+        String productId = scanner.nextLine();
+        Goods target = UserManager.findGoodsByProductId(productId);
+        if (target == null) {
+            System.out.println("商品不存在！");
+            return;
+        }
+        int num = readInt("请输入购买数量：");
+        if (num <= 0) {
+            System.out.println("数量必须大于0！");
+            return;
+        }
+        for (CartItem item : cart) {
+            if (item.getGoods().getProductId().equals(productId)) {
+                if (item.getCount() + num > target.getNum()) {
+                    System.out.println("库存不足！当前库存：" + target.getNum());
+                    return;
+                }
+                item.setCount(item.getCount() + num);
+                System.out.println("购物车中已有该商品，当前数量：" + item.getCount());
+                return;
+            }
+        }
+        if (num > target.getNum()) {
+            System.out.println("库存不足！当前库存：" + target.getNum());
+            return;
+        }
+        cart.add(new CartItem(target, num));
+        System.out.println("已加入购物车！");
     }
     private void deleteGoodsTowardsCart() {
-        System.out.print("请输入商品名称：");
-        String goodName = scanner.nextLine();
-        System.out.print("请输入删除数量：");
-        String num = scanner.nextLine();
-        System.out.print("确认删除？y/n：");
+        if (cart.isEmpty()) {
+            System.out.println("购物车为空！");
+            return;
+        }
+        System.out.print("请输入要移除的商品编号：");
+        String productId = scanner.nextLine();
+        CartItem target = null;
+        for (CartItem item : cart) {
+            if (item.getGoods().getProductId().equals(productId)) {
+                target = item;
+                break;
+            }
+        }
+        if (target == null) {
+            System.out.println("购物车中没有该商品！");
+            return;
+        }
+        System.out.println("警告：请确认是否将该商品从购物车移除？(y/n)");
         String answer = scanner.nextLine();
-        if (answer.equals("y"))
-        {
-            System.out.println("已删除 " + num + " 个 " + goodName);
+        if (answer.equals("y")) {
+            cart.remove(target);
+            System.out.println("已从购物车移除（商品库存不变）。");
         }
         else {
             System.out.println("已取消操作。");
         }
     }
+    private void modifyCartQuantity() {
+        if (cart.isEmpty()) {
+            System.out.println("购物车为空！");
+            return;
+        }
+        System.out.print("请输入要修改的商品编号：");
+        String productId = scanner.nextLine();
+        CartItem target = null;
+        for (CartItem item : cart) {
+            if (item.getGoods().getProductId().equals(productId)) {
+                target = item;
+                break;
+            }
+        }
+        if (target == null) {
+            System.out.println("购物车中没有该商品！");
+            return;
+        }
+        int num = readInt("请输入新的数量（不大于0则从购物车清除）：");
+        if (num <= 0) {
+            cart.remove(target);
+            System.out.println("数量不大于0，该商品已从购物车清除。");
+        }
+        else {
+            if (num > target.getGoods().getNum()) {
+                System.out.println("库存不足！当前库存：" + target.getGoods().getNum());
+                return;
+            }
+            target.setCount(num);
+            System.out.println("数量已修改为：" + num);
+        }
+    }
     private void checkGoods() {
-        System.out.println("购物车结算功能正在完善。");
-        System.out.println("当前版本重点实现用户管理系统。");
+        if (cart.isEmpty()) {
+            System.out.println("购物车为空，无法结账！");
+            return;
+        }
+        double total = 0;
+        System.out.println("===== 购物车清单 =====");
+        for (CartItem item : cart) {
+            double subTotal = item.getGoods().getRetailPrice() * item.getCount();
+            total += subTotal;
+            System.out.printf("商品：%s，单价：%.2f，数量：%d，小计：%.2f%n",
+                    item.getGoods().getProductName(),
+                    item.getGoods().getRetailPrice(),
+                    item.getCount(),
+                    subTotal);
+        }
+        System.out.printf("订单总金额：%.2f%n", total);
+        System.out.println("请选择支付渠道：");
+        System.out.println("1.支付宝  2.微信  3.银行卡");
+        int payType = readInt("请选择：");
+        String payName;
+        switch (payType) {
+            case 1:
+                payName = "支付宝";
+                break;
+            case 2:
+                payName = "微信";
+                break;
+            case 3:
+                payName = "银行卡";
+                break;
+            default:
+                System.out.println("支付渠道无效，取消结账！");
+                return;
+        }
+        System.out.printf("正在使用【%s】发起支付，金额%.2f...%n", payName, total);
+        System.out.println("支付成功！");
+        for (CartItem item : cart) {
+            Goods g = item.getGoods();
+            g.setNum(g.getNum() - item.getCount());
+        }
+        currentCustomer.setTotalConsume(currentCustomer.getTotalConsume() + total);
+        updateLevel(currentCustomer);
+        StringBuilder detail = new StringBuilder();
+        for (CartItem item : cart) {
+            if (detail.length() > 0) {
+                detail.append("; ");
+            }
+            detail.append(item.getGoods().getProductName()).append(" x").append(item.getCount());
+        }
+        Order order = new Order();
+        order.setOrderId("O" + (UserManager.getOrderCount() + 1));
+        order.setUsername(currentCustomer.getUsername());
+        order.setTime(LocalDateTime.now().toString());
+        order.setDetail(detail.toString());
+        order.setTotalAmount(total);
+        UserManager.addOrder(order);
+        System.out.println("已更新商品库存！");
+        cart.clear();
+        System.out.println("购物车已清空，订单完成！");
+    }
+    private void viewOrderHistory() {
+        System.out.println();
+        System.out.println("===== 我的购物历史 =====");
+        ArrayList<Order> list = UserManager.getOrdersByUsername(currentCustomer.getUsername());
+        if (list.isEmpty()) {
+            System.out.println("暂无订单记录。");
+            return;
+        }
+        for (Order o : list) {
+            System.out.println("订单号：" + o.getOrderId());
+            System.out.println("时间：" + o.getTime());
+            System.out.println("商品：" + o.getDetail());
+            System.out.printf("金额：%.2f%n", o.getTotalAmount());
+            System.out.println("------------------");
+        }
+    }
+    private void updateLevel(Customer c) {
+        double t = c.getTotalConsume();
+        if (t >= 1000) {
+            c.setLevel("金牌顾客");
+        }
+        else if (t >= 500) {
+            c.setLevel("银牌顾客");
+        }
+        else {
+            c.setLevel("铜牌顾客");
+        }
     }
     private void adminMenu() {
         while (true) {
@@ -240,6 +457,9 @@ public class ShoppingSystem {
             System.out.println("2. 查看所有管理员");
             System.out.println("3. 重置顾客密码");
             System.out.println("4. 修改自己的密码");
+            System.out.println("5. 商品管理");
+            System.out.println("6. 删除顾客");
+            System.out.println("7. 查询顾客");
             System.out.println("0. 登出");
             System.out.print("请选择：");
             String choice = scanner.nextLine();
@@ -256,6 +476,15 @@ public class ShoppingSystem {
                 case "4":
                     adminChangePassword();
                     break;
+                case "5":
+                    goodsMenu();
+                    break;
+                case "6":
+                    deleteCustomer();
+                    break;
+                case "7":
+                    queryCustomer();
+                    break;
                 case "0":
                     currentAdmin = null;
                     System.out.println("管理员已登出。");
@@ -266,8 +495,7 @@ public class ShoppingSystem {
         }
     }
     private void showAllCustomers() {
-        ArrayList<Customer> list =
-                UserManager.getCustomerList();
+        ArrayList<Customer> list = UserManager.getCustomerList();
         System.out.println();
         System.out.println("===== 所有顾客 =====");
         if (list.isEmpty()) {
@@ -275,12 +503,7 @@ public class ShoppingSystem {
             return;
         }
         for (Customer customer : list) {
-            System.out.println("编号：" + customer.getCustomerId());
-            System.out.println("用户名：" + customer.getUsername());
-            System.out.println("等级："+ customer.getLevel());
-            System.out.println("电话：" + customer.getPhone());
-            System.out.println("邮箱：" + customer.getEmail());
-            System.out.println("------------------");
+            printCustomer(customer);
         }
     }
     private void showAllAdmins() {
@@ -292,21 +515,17 @@ public class ShoppingSystem {
         }
     }
     private void resetCustomerPassword() {
-        System.out.print("请输入顾客用户名：");String username = scanner.nextLine();
-        ArrayList<Customer> list = UserManager.getCustomerList();
-        Customer targetCustomer = null;
-        for (Customer customer : list) {
-            if (customer.getUsername().equals(username)) {
-                targetCustomer = customer;
-                break;
-            }
-        }
+        System.out.print("请输入顾客用户名：");
+        String username = scanner.nextLine();
+        Customer targetCustomer = UserManager.findCustomerByUsername(username);
         if (targetCustomer == null) {
             System.out.println("没有找到该顾客！");
             return;
         }
         String newPassword = targetCustomer.createRandomPassword();
         targetCustomer.setPassword(newPassword);
+        targetCustomer.setFailedAttempt(0);
+        targetCustomer.setLocked(false);
         UserManager.saveCustomers();
         System.out.println("密码已经重置！");
         System.out.println("新密码：" + newPassword);
@@ -323,5 +542,218 @@ public class ShoppingSystem {
         currentAdmin.setPassword(newPassword);
         UserManager.saveAdmins();
         System.out.println("管理员密码修改成功！");
+    }
+    private void deleteCustomer() {
+        System.out.print("请输入要删除的顾客用户名：");
+        String username = scanner.nextLine();
+        Customer target = UserManager.findCustomerByUsername(username);
+        if (target == null) {
+            System.out.println("没有找到该顾客！");
+            return;
+        }
+        System.out.println("警告：删除顾客后无法恢复，请确认是否继续删除操作？(y/n)");
+        String answer = scanner.nextLine();
+        if (answer.equals("y")) {
+            UserManager.deleteCustomer(target);
+            System.out.println("顾客已删除。");
+        }
+        else {
+            System.out.println("已取消删除操作。");
+        }
+    }
+    private void queryCustomer() {
+        System.out.print("请输入顾客编号或用户名：");
+        String key = scanner.nextLine();
+        Customer c = UserManager.findCustomerByCustomerId(key);
+        if (c == null) {
+            c = UserManager.findCustomerByUsername(key);
+        }
+        if (c == null) {
+            System.out.println("没有找到该顾客！");
+            return;
+        }
+        printCustomer(c);
+    }
+    private void printCustomer(Customer c) {
+        System.out.println("编号：" + c.getCustomerId());
+        System.out.println("用户名：" + c.getUsername());
+        System.out.println("等级：" + c.getLevel());
+        System.out.println("注册时间：" + c.getRegisterTime());
+        System.out.println("总消费：" + c.getTotalConsume());
+        System.out.println("电话：" + c.getPhone());
+        System.out.println("邮箱：" + c.getEmail());
+        System.out.println("------------------");
+    }
+    private void goodsMenu() {
+        while (true) {
+            System.out.println();
+            System.out.println("===== 商品管理 =====");
+            System.out.println("1. 列出所有商品");
+            System.out.println("2. 添加商品");
+            System.out.println("3. 修改商品");
+            System.out.println("4. 删除商品");
+            System.out.println("5. 查询商品");
+            System.out.println("0. 返回管理员菜单");
+            System.out.print("请选择：");
+            String choice = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    showAllGoods();
+                    break;
+                case "2":
+                    addGoods();
+                    break;
+                case "3":
+                    updateGoods();
+                    break;
+                case "4":
+                    deleteGoods();
+                    break;
+                case "5":
+                    searchGoods();
+                    break;
+                case "0":
+                    return;
+                default:
+                    System.out.println("输入错误！");
+            }
+        }
+    }
+    private void showAllGoods() {
+        System.out.println();
+        System.out.println("===== 所有商品 =====");
+        ArrayList<Goods> list = UserManager.getGoodsList();
+        if (list.isEmpty()) {
+            System.out.println("当前没有商品。");
+            return;
+        }
+        for (Goods g : list) {
+            printGoods(g);
+        }
+    }
+    private void addGoods() {
+        System.out.println();
+        System.out.println("===== 添加商品 =====");
+        System.out.print("请输入商品编号：");
+        String productId = scanner.nextLine();
+        if (UserManager.findGoodsByProductId(productId) != null) {
+            System.out.println("该商品编号已存在！");
+            return;
+        }
+        System.out.print("请输入商品名称：");
+        String productName = scanner.nextLine();
+        System.out.print("请输入生产厂家：");
+        String manufacturer = scanner.nextLine();
+        System.out.print("请输入生产日期：");
+        String produceDate = scanner.nextLine();
+        System.out.print("请输入型号：");
+        String model = scanner.nextLine();
+        double purchasePrice = readDouble("请输入进货价：");
+        double retailPrice = readDouble("请输入零售价格：");
+        int num = readInt("请输入数量：");
+        Goods g = new Goods();
+        g.setProductId(productId);
+        g.setProductName(productName);
+        g.setManufacturer(manufacturer);
+        g.setProduceDate(produceDate);
+        g.setModel(model);
+        g.setPurchasePrice(purchasePrice);
+        g.setRetailPrice(retailPrice);
+        g.setNum(num);
+        UserManager.addGoods(g);
+        System.out.println("商品添加成功！");
+    }
+    private void updateGoods() {
+        System.out.print("请输入要修改的商品编号：");
+        String productId = scanner.nextLine();
+        Goods target = UserManager.findGoodsByProductId(productId);
+        if (target == null) {
+            System.out.println("没有找到该商品！");
+            return;
+        }
+        System.out.print("请输入新的商品名称：");
+        target.setProductName(scanner.nextLine());
+        System.out.print("请输入新的生产厂家：");
+        target.setManufacturer(scanner.nextLine());
+        System.out.print("请输入新的生产日期：");
+        target.setProduceDate(scanner.nextLine());
+        System.out.print("请输入新的型号：");
+        target.setModel(scanner.nextLine());
+        target.setPurchasePrice(readDouble("请输入新的进货价："));
+        target.setRetailPrice(readDouble("请输入新的零售价格："));
+        target.setNum(readInt("请输入新的数量："));
+        UserManager.updateGoods(target);
+        System.out.println("商品信息修改成功！");
+    }
+    private void deleteGoods() {
+        System.out.print("请输入要删除的商品编号：");
+        String productId = scanner.nextLine();
+        Goods target = UserManager.findGoodsByProductId(productId);
+        if (target == null) {
+            System.out.println("没有找到该商品！");
+            return;
+        }
+        System.out.println("警告：删除后无法恢复，请确认是否继续删除操作？(y/n)");
+        String answer = scanner.nextLine();
+        if (answer.equals("y")) {
+            UserManager.deleteGoods(target);
+            System.out.println("商品删除成功！");
+        }
+        else {
+            System.out.println("已取消删除操作。");
+        }
+    }
+    private void searchGoods() {
+        System.out.println();
+        System.out.println("===== 查询商品 =====");
+        System.out.print("请输入商品名称（不限制直接回车）：");
+        String name = scanner.nextLine();
+        System.out.print("请输入生产厂家（不限制直接回车）：");
+        String manufacturer = scanner.nextLine();
+        double minPrice = readDouble("请输入零售价格下限（不限制输入0）：");
+        ArrayList<Goods> result = UserManager.searchGoods(name, manufacturer, minPrice);
+        System.out.println("===== 查询结果 =====");
+        if (result.isEmpty()) {
+            System.out.println("没有符合条件的商品！");
+            return;
+        }
+        for (Goods g : result) {
+            printGoods(g);
+        }
+    }
+    private void printGoods(Goods g) {
+        System.out.println("商品编号：" + g.getProductId());
+        System.out.println("商品名称：" + g.getProductName());
+        System.out.println("生产厂家：" + g.getManufacturer());
+        System.out.println("生产日期：" + g.getProduceDate());
+        System.out.println("型号：" + g.getModel());
+        System.out.println("进货价：" + g.getPurchasePrice());
+        System.out.println("零售价格：" + g.getRetailPrice());
+        System.out.println("数量：" + g.getNum());
+        System.out.println("------------------");
+    }
+    private int readInt(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String s = scanner.nextLine();
+            try {
+                return Integer.parseInt(s.trim());
+            }
+            catch (NumberFormatException e) {
+                System.out.println("请输入整数！");
+            }
+        }
+    }
+    private double readDouble(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String s = scanner.nextLine();
+            try {
+                return Double.parseDouble(s.trim());
+            }
+            catch (NumberFormatException e) {
+                System.out.println("请输入数字！");
+            }
+        }
     }
 }

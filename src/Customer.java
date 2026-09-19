@@ -7,6 +7,8 @@ public class Customer extends User {
     private double totalConsume;
     private String phone;
     private String email;
+    private int failedAttempt;
+    private boolean locked;
     public String getCustomerId() {
         return customerId;
     }
@@ -43,6 +45,18 @@ public class Customer extends User {
     public void setEmail(String email) {
         this.email = email;
     }
+    public int getFailedAttempt() {
+        return failedAttempt;
+    }
+    public void setFailedAttempt(int failedAttempt) {
+        this.failedAttempt = failedAttempt;
+    }
+    public boolean isLocked() {
+        return locked;
+    }
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
     public String createRandomPassword() {
         String lowerCase = "abcdefghijklmnopqrstuvwxyz";
         String upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -56,6 +70,8 @@ public class Customer extends User {
         password.append(digits.charAt(random.nextInt(digits.length())));
         password.append(symbols.charAt(random.nextInt(symbols.length())));
         for (int i = 4; i < 10; i++) {
-            password.append(all.charAt(random.nextInt(all.length())));}return password.toString();
+            password.append(all.charAt(random.nextInt(all.length())));
+        }
+        return password.toString();
     }
 }
