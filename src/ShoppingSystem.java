@@ -42,6 +42,15 @@ public class ShoppingSystem {
             }
         }
     }
+    //手机号校验：11位数字，1开头，第二位3-9
+    private boolean isValidPhone(String phone) {
+        return phone != null && phone.matches("^1[3-9]\\d{9}$");
+    }
+    //邮箱格式校验
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+
     private void customerRegister() {
         System.out.println();
         System.out.println("===== 顾客注册 =====");
@@ -59,8 +68,16 @@ public class ShoppingSystem {
         }
         System.out.print("请输入电话号码：");
         String phone = scanner.nextLine();
+        if (!isValidPhone(phone)) {//按国家标准校验手机号
+            System.out.println("电话号码格式不正确（应为11位手机号，1开头）！");
+            return;
+        }
         System.out.print("请输入邮箱：");
         String email = scanner.nextLine();
+        if (!isValidEmail(email)) {//按标准邮箱格式校验
+            System.out.println("邮箱格式不正确！");
+            return;
+        }
         boolean result = UserManager.registerCustomer(username, password, phone, email);
         if (result) {
             System.out.println("注册成功！");
@@ -74,8 +91,16 @@ public class ShoppingSystem {
         System.out.println("===== 管理员注册 =====");
         System.out.print("请输入管理员用户名：");
         String username = scanner.nextLine();
+        if (username.length() < 5) {//管理员用户名长度同样不少于5个字符
+            System.out.println("用户名长度不少于5个字符！");
+            return;
+        }
         System.out.print("请输入管理员密码：");
         String password = scanner.nextLine();
+        if (!User.isValidPassword(password)) {//管理员密码强度与顾客一致
+            System.out.println("密码长度需大于8位，且必须同时包含大写字母、小写字母、数字和标点符号！");
+            return;
+        }
         boolean result = UserManager.registerAdmin(username, password);
         if (result) {
             System.out.println("管理员注册成功！");
@@ -539,6 +564,10 @@ public class ShoppingSystem {
         }
         System.out.print("请输入新密码：");
         String newPassword = scanner.nextLine();
+        if (!User.isValidPassword(newPassword)) {//管理员新密码同样强度要求
+            System.out.println("新密码长度需大于8位，且必须同时包含大写字母、小写字母、数字和标点符号！");
+            return;
+        }
         currentAdmin.setPassword(newPassword);
         UserManager.saveAdmins();
         System.out.println("管理员密码修改成功！");
