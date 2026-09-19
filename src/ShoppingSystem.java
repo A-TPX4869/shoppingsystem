@@ -51,6 +51,25 @@ public class ShoppingSystem {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 
+    //商品编号校验：G开头+3位数字
+    private boolean isValidProductId(String id) {
+        return id != null && id.matches("^G\\d{3}$");
+    }
+    //生产日期格式校验：yyyy-MM-dd
+    private boolean isValidDate(String date) {
+        if (date == null || !date.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+            return false;
+        }
+        try {
+            int year = Integer.parseInt(date.substring(0, 4));
+            int month = Integer.parseInt(date.substring(5, 7));
+            int day = Integer.parseInt(date.substring(8, 10));
+            return year >= 2000 && year <= 2100 && month >= 1 && month <= 12 && day >= 1 && day <= 31;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private void customerRegister() {
         System.out.println();
         System.out.println("===== 顾客注册 =====");
@@ -663,8 +682,12 @@ public class ShoppingSystem {
     private void addGoods() {
         System.out.println();
         System.out.println("===== 添加商品 =====");
-        System.out.print("请输入商品编号：");
+        System.out.print("请输入商品编号（G开头+3位数字，如G001）：");
         String productId = scanner.nextLine();
+        if (!isValidProductId(productId)) {
+            System.out.println("商品编号格式不正确（应为G开头加3位数字，如G001）！");
+            return;
+        }
         if (UserManager.findGoodsByProductId(productId) != null) {
             System.out.println("该商品编号已存在！");
             return;
@@ -673,13 +696,29 @@ public class ShoppingSystem {
         String productName = scanner.nextLine();
         System.out.print("请输入生产厂家：");
         String manufacturer = scanner.nextLine();
-        System.out.print("请输入生产日期：");
+        System.out.print("请输入生产日期（格式yyyy-MM-dd）：");
         String produceDate = scanner.nextLine();
+        if (!isValidDate(produceDate)) {
+            System.out.println("生产日期格式不正确（应为yyyy-MM-dd，如2026-01-10）！");
+            return;
+        }
         System.out.print("请输入型号：");
         String model = scanner.nextLine();
         double purchasePrice = readDouble("请输入进货价：");
+        while (purchasePrice < 0) {
+            System.out.println("进货价不能为负数！");
+            purchasePrice = readDouble("请输入进货价：");
+        }
         double retailPrice = readDouble("请输入零售价格：");
+        while (retailPrice < 0) {
+            System.out.println("零售价不能为负数！");
+            retailPrice = readDouble("请输入零售价格：");
+        }
         int num = readInt("请输入数量：");
+        while (num < 0) {
+            System.out.println("数量不能为负数！");
+            num = readInt("请输入数量：");
+        }
         Goods g = new Goods();
         g.setProductId(productId);
         g.setProductName(productName);
@@ -704,13 +743,33 @@ public class ShoppingSystem {
         target.setProductName(scanner.nextLine());
         System.out.print("请输入新的生产厂家：");
         target.setManufacturer(scanner.nextLine());
-        System.out.print("请输入新的生产日期：");
-        target.setProduceDate(scanner.nextLine());
+        System.out.print("请输入新的生产日期（格式yyyy-MM-dd）：");
+        String newDate = scanner.nextLine();
+        if (!isValidDate(newDate)) {
+            System.out.println("生产日期格式不正确，修改失败！");
+            return;
+        }
+        target.setProduceDate(newDate);
         System.out.print("请输入新的型号：");
         target.setModel(scanner.nextLine());
-        target.setPurchasePrice(readDouble("请输入新的进货价："));
-        target.setRetailPrice(readDouble("请输入新的零售价格："));
-        target.setNum(readInt("请输入新的数量："));
+        double purchasePrice = readDouble("请输入新的进货价：");
+        while (purchasePrice < 0) {
+            System.out.println("进货价不能为负数！");
+            purchasePrice = readDouble("请输入新的进货价：");
+        }
+        target.setPurchasePrice(purchasePrice);
+        double retailPrice = readDouble("请输入新的零售价格：");
+        while (retailPrice < 0) {
+            System.out.println("零售价不能为负数！");
+            retailPrice = readDouble("请输入新的零售价格：");
+        }
+        target.setRetailPrice(retailPrice);
+        int num = readInt("请输入新的数量：");
+        while (num < 0) {
+            System.out.println("数量不能为负数！");
+            num = readInt("请输入新的数量：");
+        }
+        target.setNum(num);
         UserManager.updateGoods(target);
         System.out.println("商品信息修改成功！");
     }
